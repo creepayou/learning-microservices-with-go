@@ -8,25 +8,37 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 
 func main(){
 
+	// pgdb.Dbmain()
+
 	//creating new handlers
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
 	hotateHandler := handlers.NewHotate(l)
 	productHandler := handlers.NewProducts(l)
+	personHandler := handlers.NewPersonHandler(l)
 
 	//creating new serveMux and register the handlers
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/", hotateHandler)
 	serveMux.Handle("/products", productHandler)
 
+	serveMux2 := mux.NewRouter()
+	getRouter := serveMux2.Methods("GET").Subrouter()
+	getRouter.HandleFunc("/getProducts", productHandler.GetProducts) 
+	getRouter.HandleFunc("/getPerson", personHandler.GetPerson)
+
+	serveMux2.Handle("/products", productHandler).Methods("GET")
+
 	//create a new server
 	server := &http.Server{
 		Addr: ":8082",
-		Handler: serveMux,
+		Handler: getRouter,
 		IdleTimeout: 120*time.Second,
 		ReadTimeout: 1*time.Second,
 		WriteTimeout: 1*time.Second,
